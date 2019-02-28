@@ -71,7 +71,8 @@ if __name__ == '__main__':
         rects = detector(gray, 0)
 
         # loop over the face detections
-        for rect in rects:
+        if len(rects) > 0:
+            rect = rects[0]
             # determine the facial landmarks for the face region, then
             # convert the facial landmark (x, y)-coordinates to a NumPy
             # array
@@ -132,6 +133,9 @@ if __name__ == '__main__':
             cv2.putText(frame, "EAR: {:.2f}".format(ear), (300, 30),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
+        else:
+            COUNTER = 0
+
         # show the frame
         cv2.imshow("Frame", frame)
         key = cv2.waitKey(1) & 0xFF
@@ -141,6 +145,7 @@ if __name__ == '__main__':
             break
 
         fps.update()
+
 
     # stop the timer and display FPS information
     fps.stop()
