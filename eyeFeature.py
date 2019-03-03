@@ -31,9 +31,10 @@ def get_eye_features(fileName):
     (lStart, lEnd) = face_utils.FACIAL_LANDMARKS_IDXS["left_eye"]
     (rStart, rEnd) = face_utils.FACIAL_LANDMARKS_IDXS["right_eye"]
 
-    numOfFrame = 0
+    validFrame = 0
     avgClosureDegree = 0
     maxClosureFrames = 0
+    totalFrame = 0
 
     print("[INFO] starting video file thread...")
     fvs = FileVideoStream('./videos/' + fileName).start()
@@ -45,13 +46,14 @@ def get_eye_features(fileName):
         frame = fvs.read()
         if frame is None:
             break
+        totalFrame += 1
         frame = imutils.resize(frame, width=450)
         frame = cv2.transpose(frame)
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         rects = detector(gray, 0)
 
         if len(rects) > 0:
-            numOfFrame += 1
+            validFrame += 1
             rect = rects[0]
 
             shape = predictor(gray, rect)
@@ -100,25 +102,33 @@ def get_eye_features(fileName):
     cv2.destroyAllWindows()
     fvs.stop()
 
-    duration = videoProcessing.get_duration(fileName)
-    return {'BlinkRate':totalBlink/duration,
-            'AvgClosureDegree':avgClosureDegree/numOfFrame,
-            'MaxClosureFrames': maxClosureFrames}
-# python try.py --video IMG_8673.MOV --shape-predictor shape_predictor_68_face_landmarks.dat --alarm alarm.wav
+    # duration = videoProcessing.get_duration(fileName)
+    validDuration = validFrame / 30
+    duration = totalFrame / 30
+    return {'BlinkRate':totalBlink/validDuration,
+            'AvgClosureDegree':avgClosureDegree/validFrame,
+            'MaxClosureFrames': maxClosureFrames,
+            'ValidDuration': validDuration,
+            'Blinks': totalBlink,
+            'Duration': duration}
+# python try.py --video IMG_8673.MOV --shape-prdictor shape_predictor_68_face_landmarks.dat --alarm alarm.wav
+
 
 if __name__ == '__main__':
     path = os.getcwd()
-    d = {'Video':[], 'BlinkRate': [], 'AvgClosureDegree': [], 'MaxClosureFrames': []}
+    d = {'Video':[], 'BlinkRate': [], 'AvgClosureDegree': [], 'MaxClosureFrames': [], 'ValidDuration' : [], 'Blinks': [],
+         'Duration' : []}
     for file in os.listdir(path + '/videos'):
         data = get_eye_features(file)
         d['Video'].append(file)
         d['BlinkRate'].append(data['BlinkRate'])
         d['AvgClosureDegree'].append(data['AvgClosureDegree'])
         d['MaxClosureFrames'].append(data['MaxClosureFrames'])
+        d['ValidDuration'].append(data['ValidDuration'])
+        d['Blinks'].append(data['Blinks'])
+        d['Duration'].append(data['Duration'])
     df = pd.DataFrame(data=d)
-    writer = pd.ExcelWriter('./output/output.xlsx')
-    df.to_excel(writer,'Sheet1',index=False)
-    writer.save()
+    df.to_csv('./output/output.csv')
 
 
 
