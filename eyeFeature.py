@@ -18,7 +18,7 @@ def eye_aspect_ratio(eye):
     return ear
 
 
-def get_eye_features(fileName):
+def get_eye_features(path):
     EYE_AR_THRESH = 0.3
     EYE_AR_CONSEC_FRAMES = 48
     BLINK_FRAMES = 3
@@ -34,10 +34,14 @@ def get_eye_features(fileName):
     validFrame = 0
     avgClosureDegree = 0
     maxClosureFrames = 0
-    totalFrame = 0
+
 
     print("[INFO] starting video file thread...")
-    fvs = FileVideoStream('./videos/' + fileName).start()
+    cap = cv2.VideoCapture(path)
+    totalFrame = cap.get(cv2.CAP_PROP_FRAME_COUNT)
+    cap.release()
+
+    fvs = FileVideoStream(path).start()
     time.sleep(1.0)
 
 
@@ -46,7 +50,7 @@ def get_eye_features(fileName):
         frame = fvs.read()
         if frame is None:
             break
-        totalFrame += 1
+
         frame = imutils.resize(frame, width=450)
         frame = cv2.transpose(frame)
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -111,15 +115,14 @@ def get_eye_features(fileName):
             'ValidDuration': validDuration,
             'Blinks': totalBlink,
             'Duration': duration}
-# python try.py --video IMG_8673.MOV --shape-prdictor shape_predictor_68_face_landmarks.dat --alarm alarm.wav
 
 
 if __name__ == '__main__':
-    path = os.getcwd()
+    path = './data'
     d = {'Video':[], 'BlinkRate': [], 'AvgClosureDegree': [], 'MaxClosureFrames': [], 'ValidDuration' : [], 'Blinks': [],
          'Duration' : []}
-    for file in os.listdir(path + '/videos'):
-        data = get_eye_features(file)
+    for file in os.listdir(path):
+        data = get_eye_features(path + '/' + file)
         d['Video'].append(file)
         d['BlinkRate'].append(data['BlinkRate'])
         d['AvgClosureDegree'].append(data['AvgClosureDegree'])
@@ -128,7 +131,7 @@ if __name__ == '__main__':
         d['Blinks'].append(data['Blinks'])
         d['Duration'].append(data['Duration'])
     df = pd.DataFrame(data=d)
-    df.to_csv('./output/output.csv')
+    df.to_csv('./output/output_data.csv')
 
 
 

@@ -26,7 +26,7 @@ def eye_aspect_ratio(eye):
     # return the eye aspect ratio
     return ear
 
-def countBlinks(fileName):
+def countBlinks(path):
     # define two constants, one for the eye aspect ratio to indicate
     # blink and then a second constant for the number of consecutive
     # frames the eye must be below the threshold
@@ -36,6 +36,7 @@ def countBlinks(fileName):
     # initialize the frame counters and the total number of blinks
     COUNTER = 0
     TOTAL = 0
+    EAR_RECORD = []
 
     # initialize dlib's face detector (HOG-based) and then create
     # the facial landmark predictor
@@ -50,7 +51,7 @@ def countBlinks(fileName):
 
     # start the video stream thread
     print("[INFO] starting video stream thread...")
-    vs = FileVideoStream('./videos/' + fileName).start()
+    vs = FileVideoStream(path).start()
     fileStream = True
     # vs = VideoStream(src=0).start()
     # vs = VideoStream(usePiCamera=True).start()
@@ -70,8 +71,8 @@ def countBlinks(fileName):
         frame = vs.read()
         if frame is None:
             break
-        frame = imutils.resize(frame, width=450)
-        frame = cv2.transpose(frame)
+        # frame = imutils.resize(frame, width=450)
+        # frame = cv2.transpose(frame)
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
         # detect faces in the grayscale frame
@@ -95,6 +96,7 @@ def countBlinks(fileName):
 
             # average the eye aspect ratio together for both eyes
             ear = (leftEAR + rightEAR) / 2.0
+            EAR_RECORD.append(ear)
 
             # compute the convex hull for the left and right eye, then
             # visualize each of the eyes
@@ -125,6 +127,10 @@ def countBlinks(fileName):
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
             cv2.putText(frame, "EAR: {:.2f}".format(ear), (300, 30),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        else:
+            COUNTER = 0
+            EAR_RECORD.append(0)
+
 
         # show the frame
         cv2.imshow("Frame", frame)
@@ -137,15 +143,19 @@ def countBlinks(fileName):
     # do a bit of cleanup
     cv2.destroyAllWindows()
     vs.stop()
-    return TOTAL
+    return TOTAL, EAR_RECORD
 
 
 if __name__ == '__main__':
-    path = os.getcwd()
+    path = './data'
     d = {'Video':[], 'Blinks': [] }
-    for file in os.listdir(path + '/video'):
-        blinks = countBlinks(file)
-        d['Video'].append(file)
-        d['Blinks'].append(blinks)
+    for file in os.listdir(path):
+        if file[0] != '.':
+            blinks, earRecord = countBlinks(path + '/' + file)
+            d['Video'].append(file)
+            d['Blinks'].append(blinks)
+            earRecord = '\n'.join(str(i) for i in earRecord)
+            with open('./output/EAR_value_' + file +'.txt', 'w') as f:
+                f.write(earRecord)
     df = pd.DataFrame(data=d)
     df.to_csv('./output/blinks_' + file + '.csv')

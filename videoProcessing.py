@@ -1,8 +1,8 @@
 import cv2
 
 
-def get_duration(name):
-    cap = cv2.VideoCapture("./videos/" + name)
+def get_duration(path):
+    cap = cv2.VideoCapture(path)
     fps = cap.get(cv2.CAP_PROP_FPS)      # OpenCV2 version 2 used "CV_CAP_PROP_FPS"
     frameCount = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     duration = frameCount/fps
@@ -17,4 +17,5 @@ def get_duration(name):
     return duration
 
 
-
+if __name__ == '__main__':
+    get_duration('./data/IMG_8685_18.avi')
