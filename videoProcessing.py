@@ -17,5 +17,13 @@ def get_duration(path):
     return duration
 
 
+def get_size(path):
+    cap = cv2.VideoCapture(path)
+    size = (cap.get(cv2.CAP_PROP_FRAME_WIDTH), cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    print ('size = ' + str(size[0]) + ', ' + str(size[1]))
+    return size
+
+
 if __name__ == '__main__':
-    get_duration('./data/IMG_8685_18.avi')
+    get_duration('./data/IMG_8675_03.avi')
+    print(get_size('./data/IMG_8675_03.avi'))

@@ -147,7 +147,7 @@ def countBlinks(path):
 
 
 if __name__ == '__main__':
-    path = './data'
+    path = './test'
     d = {'Video':[], 'Blinks': [] }
     for file in os.listdir(path):
         if file[0] != '.':

@@ -10,6 +10,7 @@ import videoProcessing
 import os
 import pandas as pd
 
+
 def eye_aspect_ratio(eye):
     A = dist.euclidean(eye[1], eye[5])
     B = dist.euclidean(eye[2], eye[4])
@@ -20,12 +21,12 @@ def eye_aspect_ratio(eye):
 
 def get_eye_features(path):
     EYE_AR_THRESH = 0.3
-    EYE_AR_CONSEC_FRAMES = 48
+    # EYE_AR_CONSEC_FRAMES = 48
     BLINK_FRAMES = 3
     totalBlink = 0
     COUNTER = 0
-    ALARM_ON = False
-    print("[INFO] loading facial landmark predictor...")
+    # ALARM_ON = False
+
     detector = dlib.get_frontal_face_detector()
     predictor = dlib.shape_predictor('shape_predictor_68_face_landmarks.dat')
     (lStart, lEnd) = face_utils.FACIAL_LANDMARKS_IDXS["left_eye"]
@@ -36,7 +37,7 @@ def get_eye_features(path):
     maxClosureFrames = 0
 
 
-    print("[INFO] starting video file thread...")
+    print("[INFO] starting video file: " + path)
     cap = cv2.VideoCapture(path)
     totalFrame = cap.get(cv2.CAP_PROP_FRAME_COUNT)
     cap.release()
@@ -51,11 +52,8 @@ def get_eye_features(path):
         if frame is None:
             break
 
-        frame = imutils.resize(frame, width=450)
-        frame = cv2.transpose(frame)
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         rects = detector(gray, 0)
-
         if len(rects) > 0:
             validFrame += 1
             rect = rects[0]
@@ -70,30 +68,16 @@ def get_eye_features(path):
 
             avgClosureDegree += ear
 
-            leftEyeHull = cv2.convexHull(leftEye)
-            rightEyeHull = cv2.convexHull(rightEye)
-            cv2.drawContours(frame, [leftEyeHull], -1, (0, 255, 0), 1)
-            cv2.drawContours(frame, [rightEyeHull], -1, (0, 255, 0), 1)
-
             if ear < EYE_AR_THRESH:
                 COUNTER += 1
-                # if the eyes were closed for a sufficient number of
-                if COUNTER >= EYE_AR_CONSEC_FRAMES:
-                    if not ALARM_ON:
-                        ALARM_ON = True
-                    cv2.putText(frame, "DROWSINESS ALERT!", (10, 30),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+
             else:
                 if COUNTER >= BLINK_FRAMES:
                     totalBlink += 1
                 COUNTER = 0
-                ALARM_ON = False
 
             if COUNTER > maxClosureFrames:
                 maxClosureFrames = COUNTER
-
-            cv2.putText(frame, "EAR: {:.2f}".format(ear), (300, 30),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
         else:
             COUNTER = 0
@@ -109,8 +93,8 @@ def get_eye_features(path):
     # duration = videoProcessing.get_duration(fileName)
     validDuration = validFrame / 30
     duration = totalFrame / 30
-    return {'BlinkRate':totalBlink/validDuration,
-            'AvgClosureDegree':avgClosureDegree/validFrame,
+    return {'BlinkRate': totalBlink/validDuration,
+            'AvgClosureDegree': avgClosureDegree/validFrame,
             'MaxClosureFrames': maxClosureFrames,
             'ValidDuration': validDuration,
             'Blinks': totalBlink,
@@ -121,17 +105,25 @@ if __name__ == '__main__':
     path = './data'
     d = {'Video':[], 'BlinkRate': [], 'AvgClosureDegree': [], 'MaxClosureFrames': [], 'ValidDuration' : [], 'Blinks': [],
          'Duration' : []}
+
+    totalFiles = len(os.listdir(path))
+    competed = 0
+
     for file in os.listdir(path):
-        data = get_eye_features(path + '/' + file)
-        d['Video'].append(file)
-        d['BlinkRate'].append(data['BlinkRate'])
-        d['AvgClosureDegree'].append(data['AvgClosureDegree'])
-        d['MaxClosureFrames'].append(data['MaxClosureFrames'])
-        d['ValidDuration'].append(data['ValidDuration'])
-        d['Blinks'].append(data['Blinks'])
-        d['Duration'].append(data['Duration'])
+        if file[0] != '.':
+            data = get_eye_features(path + '/' + file)
+            d['Video'].append(file)
+            d['BlinkRate'].append(data['BlinkRate'])
+            d['AvgClosureDegree'].append(data['AvgClosureDegree'])
+            d['MaxClosureFrames'].append(data['MaxClosureFrames'])
+            d['ValidDuration'].append(data['ValidDuration'])
+            d['Blinks'].append(data['Blinks'])
+            d['Duration'].append(data['Duration'])
+        competed += 1
+        print(str(competed) + '/' + str(totalFiles))
+
     df = pd.DataFrame(data=d)
-    df.to_csv('./output/output_data.csv')
+    df.to_csv('./output/eyeFeatures.csv')
 
 
 

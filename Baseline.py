@@ -40,6 +40,9 @@ def is_drowsy(path):
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         rects = detector(gray, 0)
 
+        if len(rects) > 1:
+            print(str(len(rects)) + ' faces detected!')
+
         for rect in rects:
             shape = predictor(gray, rect)
             shape = face_utils.shape_to_np(shape)
@@ -64,7 +67,7 @@ def is_drowsy(path):
                 COUNTER = 0
                 ALARM_ON = False
 
-        key = cv2.waitKey(1) & 0xFF
+        key = cv2.waitKey(10) & 0xFF
         # if the `q` key was pressed, break from the loop
         if key == ord("q"):
             break
@@ -73,6 +76,7 @@ def is_drowsy(path):
     cv2.destroyAllWindows()
     fvs.stop()
     return isDrowsy
+
 
 def is_drowsy_test(path):
     isDrowsy = False
@@ -102,6 +106,9 @@ def is_drowsy_test(path):
 
         # detect faces in the grayscale frame
         rects = detector(gray, 0)
+
+        if len(rects) > 1:
+            print(str(len(rects)) + ' faces detected!')
 
         # loop over the face detections
         for rect in rects:
@@ -170,11 +177,10 @@ def is_drowsy_test(path):
     return isDrowsy
 
 
-
 if __name__ == '__main__':
     Mode = 'Multiple'
     if Mode == 'Single':
-        print(is_drowsy_test('./data/IMG_8673_0.avi'))
+        print(is_drowsy_test('./data/IMG_8687_00.avi'))
 
     elif Mode == 'Multiple':
         result = []
@@ -186,6 +192,7 @@ if __name__ == '__main__':
                 continue
             result.append(file + '\t' + str(is_drowsy(path + file)))
             count += 1
+            print(result[-1])
             print(str(count) + '/' + str(totalFile))
-        with open('./output/baseline_output.txt', 'w') as f:
+        with open('./output/baseline_output_new.txt', 'w') as f:
             f.write('\n'.join(result))
