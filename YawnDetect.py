@@ -1,108 +1,132 @@
 import cv2
 import dlib
 import numpy as np
-
-PREDICTOR_PATH = "shape_predictor_68_face_landmarks.dat"
-predictor = dlib.shape_predictor(PREDICTOR_PATH)
-# cascade_path='haarcascade_frontalface_default.xml'
-# cascade = cv2.CascadeClassifier(cascade_path)
-detector = dlib.get_frontal_face_detector()
+import os
+import pandas as pd
 
 
-def get_landmarks(im):
-    rects = detector(im, 1)
-
-    if len(rects) > 1:
-        return "error"
-    if len(rects) == 0:
-        return "error"
-    return np.matrix([[p.x, p.y] for p in predictor(im, rects[0]).parts()])
+def get_mouth_feature(path):
+    PREDICTOR_PATH = "shape_predictor_68_face_landmarks.dat"
+    predictor = dlib.shape_predictor(PREDICTOR_PATH)
+    detector = dlib.get_frontal_face_detector()
 
 
-def annotate_landmarks(im, landmarks):
-    im = im.copy()
-    for idx, point in enumerate(landmarks):
-        pos = (point[0, 0], point[0, 1])
-        cv2.putText(im, str(idx), pos,
-                    fontFace=cv2.FONT_HERSHEY_SCRIPT_SIMPLEX,
-                    fontScale=0.4,
-                    color=(0, 0, 255))
-        cv2.circle(im, pos, 3, color=(0, 255, 255))
-    return im
+    def get_landmarks(im):
+        rects = detector(im, 1)
+        if len(rects) > 1:
+            return "error"
+        if len(rects) == 0:
+            return "error"
+        return np.matrix([[p.x, p.y] for p in predictor(im, rects[0]).parts()])
 
 
-def top_lip(landmarks):
-    top_lip_pts = []
-    for i in range(50, 53):
-        top_lip_pts.append(landmarks[i])
-    for i in range(61, 64):
-        top_lip_pts.append(landmarks[i])
-    top_lip_all_pts = np.squeeze(np.asarray(top_lip_pts))
-    top_lip_mean = np.mean(top_lip_pts, axis=0)
-    return int(top_lip_mean[:, 1])
+    def annotate_landmarks(im, landmarks):
+        im = im.copy()
+        for idx, point in enumerate(landmarks):
+            pos = (point[0, 0], point[0, 1])
+            cv2.putText(im, str(idx), pos,
+                        fontFace=cv2.FONT_HERSHEY_SCRIPT_SIMPLEX,
+                        fontScale=0.4,
+                        color=(0, 0, 255))
+            cv2.circle(im, pos, 3, color=(0, 255, 255))
+        return im
 
 
-def bottom_lip(landmarks):
-    bottom_lip_pts = []
-    for i in range(65, 68):
-        bottom_lip_pts.append(landmarks[i])
-    for i in range(56, 59):
-        bottom_lip_pts.append(landmarks[i])
-    bottom_lip_all_pts = np.squeeze(np.asarray(bottom_lip_pts))
-    bottom_lip_mean = np.mean(bottom_lip_pts, axis=0)
-    return int(bottom_lip_mean[:, 1])
+    def top_lip(landmarks):
+        top_lip_pts = []
+        for i in range(50, 53):
+            top_lip_pts.append(landmarks[i])
+        for i in range(61, 64):
+            top_lip_pts.append(landmarks[i])
+        top_lip_all_pts = np.squeeze(np.asarray(top_lip_pts))
+        top_lip_mean = np.mean(top_lip_pts, axis=0)
+        return int(top_lip_mean[:, 1])
 
 
-def mouth_open(image):
-    landmarks = get_landmarks(image)
-
-    if landmarks == "error":
-        return image, 0
-
-    image_with_landmarks = annotate_landmarks(image, landmarks)
-    top_lip_center = top_lip(landmarks)
-    bottom_lip_center = bottom_lip(landmarks)
-    lip_distance = abs(top_lip_center - bottom_lip_center)
-    return image_with_landmarks, lip_distance
-
-    # cv2.imshow('Result', image_with_landmarks)
-    # cv2.imwrite('image_with_landmarks.jpg',image_with_landmarks)
-    # cv2.waitKey(0)
-    # cv2.destroyAllWindows()
+    def bottom_lip(landmarks):
+        bottom_lip_pts = []
+        for i in range(65, 68):
+            bottom_lip_pts.append(landmarks[i])
+        for i in range(56, 59):
+            bottom_lip_pts.append(landmarks[i])
+        bottom_lip_all_pts = np.squeeze(np.asarray(bottom_lip_pts))
+        bottom_lip_mean = np.mean(bottom_lip_pts, axis=0)
+        return int(bottom_lip_mean[:, 1])
 
 
-cap = cv2.VideoCapture('./data/IMG_8687_02.avi')
-yawns = 0
-yawn_status = False
+    def mouth_open(image):
+        landmarks = get_landmarks(image)
 
-while True:
-    ret, frame = cap.read()
-    image_landmarks, lip_distance = mouth_open(frame)
+        if landmarks == "error":
+            return image, 0, 0
 
-    prev_yawn_status = yawn_status
+        image_with_landmarks = annotate_landmarks(image, landmarks)
+        top_lip_center = top_lip(landmarks)
+        bottom_lip_center = bottom_lip(landmarks)
+        lip_distance = abs(top_lip_center - bottom_lip_center)
+        length_of_lip = landmarks[64] - landmarks[60]
+        return image_with_landmarks, lip_distance, length_of_lip.item(0)
 
-    if lip_distance > 25:
-        yawn_status = True
 
-        cv2.putText(frame, "Subject is Yawning", (50, 450),
-                    cv2.FONT_HERSHEY_COMPLEX, 1, (0, 0, 255), 2)
+    print("[INFO] starting video file: " + path)
+    cap = cv2.VideoCapture(path)
+    # cap = cv2.VideoCapture(0)
+    yawns = 0
+    yawn_status = False
+    count = 0
+    YAWN_FRAMES = 48
+    while True:
+        ret, frame = cap.read()
+        if frame is None:
+            break
 
-        output_text = " Yawn Count: " + str(yawns + 1)
+        image_landmarks, lip_distance, length_lip = mouth_open(frame)
+        prev_yawn_status = yawn_status
+        if lip_distance > 0.5 * length_lip:
+            yawn_status = True
 
-        cv2.putText(frame, output_text, (50, 50),
-                    cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 127), 2)
+            count += 1
 
-    else:
-        yawn_status = False
+            # cv2.putText(frame, "Subject is Yawning", (50, 450),
+            #             cv2.FONT_HERSHEY_COMPLEX, 1, (0, 0, 255), 2)
+            #
+            # output_text = " Yawn Count: " + str(yawns + 1)
+            #
+            # cv2.putText(frame, output_text, (50, 50),
+            #             cv2.FONT_HERSHEY_COMPLEX, 1, (0, 255, 127), 2)
 
-    if prev_yawn_status == True and yawn_status == False:
-        yawns += 1
+        else:
+            yawn_status = False
+            if prev_yawn_status == True and count >= YAWN_FRAMES:
+                yawns += 1
+            count = 0
+        #
+        # cv2.imshow('Live Landmarks', image_landmarks)
+        # cv2.imshow('Yawn Detection', frame)
+        #
+        # if cv2.waitKey(1) == 13:  # 13 is the Enter Key
+        #     break
 
-    cv2.imshow('Live Landmarks', image_landmarks)
-    cv2.imshow('Yawn Detection', frame)
+    cap.release()
+    cv2.destroyAllWindows()
+    return yawns
 
-    if cv2.waitKey(1) == 13:  # 13 is the Enter Key
-        break
 
-cap.release()
-cv2.destroyAllWindows()
+if __name__ == '__main__':
+    path = './data'
+    d = {'Video':[], 'Yawns' : []}
+
+    totalFiles = len(os.listdir(path))
+    competed = 0
+
+    for file in os.listdir(path):
+        if file[0] != '.':
+            data = get_mouth_feature(path + '/' + file)
+            d['Video'].append(file)
+            d['Yawns'].append(data)
+        competed += 1
+        print(str(competed) + '/' + str(totalFiles))
+
+    df = pd.DataFrame(data=d)
+    df.to_csv('./output/mouthFeatures.csv')
+
