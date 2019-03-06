@@ -71,7 +71,7 @@ def mouth_open(image):
     # cv2.destroyAllWindows()
 
 
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture('./data/IMG_8687_02.avi')
 yawns = 0
 yawn_status = False
 
