@@ -27,11 +27,10 @@ def preprocess_features():
                                                         'Yawns'
                                                         ],
                                                        [],[])
-    print(feature.shape)
     print('Preprocessing done!')
     train_x = feature[:len(df_train), :]
     train_y = label[:len(df_train), :]
-    print(len(train_y))
+
     return train_x, train_y, df_train
 
 
@@ -47,7 +46,7 @@ def SVM_result(train_x, train_y, df_train):
 
     error_index = np.where(np.equal(predicted, train_y.reshape(-1, )) == False)
     print("accuracy", metrics.accuracy_score(train_y.reshape(-1, ), predicted))
-    print(len(df_train.iloc[error_index]))
+    print(len(df_train.iloc[error_index]),'\n')
     error_df = df_train.iloc[error_index].sort_values(by=['Video'])
     error_df.to_csv('./output/Error_svm.csv', index=False)
 
@@ -55,7 +54,7 @@ def SVM_result(train_x, train_y, df_train):
     print("f1 score: ", f1)
 
     auc = roc_auc_score(train_y.reshape(-1, ), predicted, average='weighted')
-    print("auc scoreL ", auc)
+    print("auc score: ", auc)
 
 
 def random_forests_model(train_x, train_y, df_train):
@@ -95,6 +94,5 @@ def random_forests_model(train_x, train_y, df_train):
 
 if __name__ == '__main__':
     train_x, train_y, df_train = preprocess_features()
-    print(train_x.shape)
     SVM_result(train_x, train_y, df_train)
     # random_forests_model(train_x, train_y, df_train)

@@ -61,7 +61,7 @@ def feature_processing(df, numericfeature, nominalfeature, stringfeature):
     else:
         stringfeature = np.zeros((len(df),1))
     feature = np.hstack((numericfeature,stringfeature,nominalfeature))
-    # print(feature[:,-1])
+
     classlabel = df.loc[:, 'GroundTruth'].values.reshape(len(df), -1)
     label = process_nominal_features(classlabel)
     return feature, label

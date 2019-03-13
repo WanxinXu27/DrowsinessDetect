@@ -140,7 +140,7 @@ if __name__ == '__main__':
     #     print(str(competed) + '/' + str(totalFiles))
     #
     # df = pd.DataFrame(data=d)
-    # df.to_csv('./output/mouthFeatures-0307-2.csv')
+    # df.to_csv('./output/mouthFeatures.csv')
 
     for file in ['IMG_8686_08.avi','IMG_8687_00.avi', 'IMG_8687_01.avi', 'IMG_8687_02.avi']:
         count = get_mouth_feature('./data/' + file)
