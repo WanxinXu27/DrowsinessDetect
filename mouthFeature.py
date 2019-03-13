@@ -38,7 +38,7 @@ def get_mouth_feature(path):
             top_lip_pts.append(landmarks[i])
         for i in range(61, 64):
             top_lip_pts.append(landmarks[i])
-        top_lip_all_pts = np.squeeze(np.asarray(top_lip_pts))
+        # top_lip_all_pts = np.squeeze(np.asarray(top_lip_pts))
         top_lip_mean = np.mean(top_lip_pts, axis=0)
         return int(top_lip_mean[:, 1])
 
@@ -49,7 +49,7 @@ def get_mouth_feature(path):
             bottom_lip_pts.append(landmarks[i])
         for i in range(56, 59):
             bottom_lip_pts.append(landmarks[i])
-        bottom_lip_all_pts = np.squeeze(np.asarray(bottom_lip_pts))
+        # bottom_lip_all_pts = np.squeeze(np.asarray(bottom_lip_pts))
         bottom_lip_mean = np.mean(bottom_lip_pts, axis=0)
         return int(bottom_lip_mean[:, 1])
 
@@ -71,17 +71,22 @@ def get_mouth_feature(path):
     print("[INFO] starting video file: " + path)
     cap = cv2.VideoCapture(path)
     # cap = cv2.VideoCapture(0)
+
+    # ratio = []
+    # yawn_count = 0
+
     yawns = 0
     yawn_status = False
     count = 0
     YAWN_FRAMES = 48
     while True:
+        prev_yawn_status = yawn_status
         ret, frame = cap.read()
         if frame is None:
             break
 
         image_landmarks, lip_distance, length_lip = mouth_open(frame)
-        prev_yawn_status = yawn_status
+        # ratio.append(str(lip_distance) + '\t' + str(length_lip))
         if lip_distance > 0.5 * length_lip:
             yawn_status = True
 
@@ -99,34 +104,47 @@ def get_mouth_feature(path):
             yawn_status = False
             if prev_yawn_status == True and count >= YAWN_FRAMES:
                 yawns += 1
+                # yawn_count = count
             count = 0
+
+        cv2.imshow('Live Landmarks', image_landmarks)
+        cv2.imshow('Yawn Detection', frame)
         #
-        # cv2.imshow('Live Landmarks', image_landmarks)
-        # cv2.imshow('Yawn Detection', frame)
-        #
-        # if cv2.waitKey(1) == 13:  # 13 is the Enter Key
-        #     break
+        if cv2.waitKey(1) == 13:  # 13 is the Enter Key
+            break
+
+    if prev_yawn_status == True and count >= YAWN_FRAMES:
+        yawns += 1
+        # yawn_count = count
 
     cap.release()
     cv2.destroyAllWindows()
     return yawns
 
+    # return ratio, yawn_count
+
 
 if __name__ == '__main__':
-    path = './data'
-    d = {'Video':[], 'Yawns' : []}
+    # path = './data'
+    # d = {'Video':[], 'Yawns' : []}
+    #
+    # totalFiles = len(os.listdir(path))
+    # competed = 0
+    #
+    # for file in os.listdir(path):
+    #     if file[0] != '.':
+    #         data = get_mouth_feature(path + '/' + file)
+    #         d['Video'].append(file)
+    #         d['Yawns'].append(data)
+    #     competed += 1
+    #     print(str(competed) + '/' + str(totalFiles))
+    #
+    # df = pd.DataFrame(data=d)
+    # df.to_csv('./output/mouthFeatures-0307-2.csv')
 
-    totalFiles = len(os.listdir(path))
-    competed = 0
-
-    for file in os.listdir(path):
-        if file[0] != '.':
-            data = get_mouth_feature(path + '/' + file)
-            d['Video'].append(file)
-            d['Yawns'].append(data)
-        competed += 1
-        print(str(competed) + '/' + str(totalFiles))
-
-    df = pd.DataFrame(data=d)
-    df.to_csv('./output/mouthFeatures.csv')
-
+    for file in ['IMG_8686_08.avi','IMG_8687_00.avi', 'IMG_8687_01.avi', 'IMG_8687_02.avi']:
+        count = get_mouth_feature('./data/' + file)
+    #     with open ('./output/yawn_threshold.txt', 'a') as f:
+    #         # f.write('\n'.join(str(i) for i in ratio))
+    #         f.write('count = ' + str(count))
+    #         f.write('\n')

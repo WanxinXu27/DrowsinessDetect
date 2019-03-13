@@ -45,6 +45,7 @@ def feature_processing(df, numericfeature, nominalfeature, stringfeature):
     # feature = np.hstack((process_numeric_features(numericfeature),process_string_features(stringfeature),
     #                      process_nominal_features(nominalfeature) ))
     # label = process_nominal_features(classlabel)
+
     if numericfeature:
         numericfeature = scale_numeric_features(df.loc[:, numericfeature].values.reshape(len(df),-1))
         # print(numericfeature.shape)
@@ -110,7 +111,6 @@ def svm_cross_validation(train_x, train_y):
 
 
 if __name__ == '__main__':
-    name = 'consistent'
-    path = 'D:/NSWerrors/Features/Feature_'+name + '.csv'
+    path = './output/eyeFeatures.csv'
     df = pd.read_csv(path, index_col=False)  # input
     print(df)
